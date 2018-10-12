@@ -1,0 +1,1017 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>A re-introduction to Concurrent Programming</title>
+
+    <meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+    <meta name="author" content="Hakim El Hattab">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+
+    <!-- Printing and PDF exports -->
+    <script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+    <!--[if lt IE 9]>
+    <script src="lib/js/html5shiv.js"></script>
+    <![endif]-->
+</head>
+
+<body>
+
+<div class="reveal">
+
+    <!-- Any section element inside of this container is displayed as a slide -->
+    <div class="slides">
+        <section>
+            <h3>A re-introduction to Concurrent Programming (based on Scala)</h3>
+            <p>
+                <small>jasonqu</small>
+            </p>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ### 提纲
+
+                * 概念介绍
+                * 基础回顾
+                * 新的模式
+            </textarea>
+        </section>
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ### 并发基础单元 —— 线程
+
+                线程就是cpu的抽象概念
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 一段代码的执行
+
+                ```
+                val double = (x: Int) => x + x
+                double(7)
+                ```
+            </textarea>
+            </section>
+
+            <section>
+                <h3>一段代码的执行</h3>
+                <img src="img/coroutines/function-invocation-1.svg" />
+<code class="fragment"><pre>
+<span class="hljs-keyword">val</span> double = (x: Int) => x + x
+double(7)
+</pre></code>
+            </section>
+
+            <section>
+                <h3>一段代码的执行</h3>
+                <img src="img/coroutines/function-invocation-2.svg" alt="from http://aleksandar-prokopec.com/slides/coroutines.html" />
+<code><pre>
+<span class="hljs-comment">val double = (x: Int) => </span>7 + 7
+double(7)
+</pre></code>
+            </section>
+
+            <section>
+            <h3>一段代码的执行</h3>
+            <img src="img/coroutines/function-invocation-3.svg" alt="from http://aleksandar-prokopec.com/slides/coroutines.html" />
+<code><pre>
+<span class="hljs-comment">val double = (x: Int) => </span>14
+double(7)
+</pre></code>
+            </section>
+
+            <section>
+            <h3>一段代码的执行</h3>
+            <img src="img/coroutines/function-invocation-4.svg" alt="from http://aleksandar-prokopec.com/slides/coroutines.html" />
+<code><pre>
+<span class="hljs-comment">val double = ...</span>
+14
+</pre></code>
+            </section>
+
+            <section>
+            <h3>一段代码的执行</h3>
+            <img src="img/coroutines/function-invocation-4.svg" alt="from http://aleksandar-prokopec.com/slides/coroutines.html" />
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 进程与线程
+
+                ![from http://www.javamex.com/tutorials/threads/how_threads_work.shtml](img/process_thread.png)
+
+                进程与线程本质上就是对cpu资源的抽象，可以认为线程就是轻量级的进程，只是内存地址是共享的。
+
+                > * [如何定位消耗CPU最多的线程](http://lovestblog.cn/blog/2016/03/31/cpu-thread/)
+
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 线程状态
+                ![from https://www.javatpoint.com/life-cycle-of-a-thread](img/thread_states.jpg)
+            </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ### 多线程的代价
+                * 设计更复杂
+                * 资源消耗: 栈的大小可以通过`ulimit -a`查看，stack size默认是8M
+                * 上下文切换的[开销](http://ifeve.com/costs-of-multithreading/)
+            </textarea>
+            </section>
+        </section>
+
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ### 并行编程(parallel computing) —— amadal 定律
+
+                ![from https://en.wikipedia.org/wiki/Parallel_computing](img/AmdahlsLaw.png)
+            </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ### 与并发编程概念比较
+                都是为了更好的利用cpu资源
+                * Parallel Computing: 关注CPU密集型问题，超级计算机模拟
+                * Concurrent Programming: 关注编程模式，提供更好的工具简化并发程序的复杂性
+
+            </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ### 机器的时间
+                ![机器时间](img/timing_machine.png)
+            </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                ### 人的时间
+                ![人的时间](img/timing_human.png)
+                </textarea>
+            </section>
+        </section>
+
+        <section data-markdown>
+            <textarea data-template>
+                ## 构建并发的传统基础
+            </textarea>
+        </section>
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ### ExecutorService
+                JDK提供的线程池的模型
+
+                * [Executor](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/Executor.html)
+                * [ExecutorService](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ExecutorService.html)
+                * [ThreadPoolExecutor](https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/ThreadPoolExecutor.html)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### Executors
+                用来快速初始化一个线程池的工厂类。《阿里巴巴java开发手册》却禁止使用：
+
+                ```
+                > 线程池不允许使用 Executors 去创建，
+                而是通过 ThreadPoolExecutor 的方式，
+                这样的处理方式让写的同学更加明确线程池的运行规则，规避资源耗尽的风险。
+
+                > 说明：Executors 返回的线程池对象的弊端如下：
+                * 1）FixedThreadPool 和 SingleThreadPool:
+                允许的请求队列长度为 Integer.MAX_VALUE，会堆积大量的请求，导致OOM。
+                * 2）CachedThreadPool 和 ScheduledThreadPool:
+                允许的创建线程数量为 Integer.MAX_VALUE，会创建大量的线程，导致OOM。
+                ```
+            </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ### Demo
+                ```java
+  public static void main(String[] args) throws InterruptedException {
+    test(Executors.newFixedThreadPool(4), "newFixedThreadPool");
+    Thread.sleep(3000);
+    test(Executors.newCachedThreadPool(), "newCachedThreadPool");
+  }
+
+  static void test(ExecutorService service, String type) {
+    System.out.println("test " + type);
+    long start = System.currentTimeMillis();
+    for(int i = 0; i < 8; i++) {
+      int j = i;
+      service.submit(() -> {
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException e) { }
+          System.out.println("Thread" + j + " finished after " + (System.currentTimeMillis() - start) + "ms");
+      });
+    }
+  }
+
+--- one output ---
+test newFixedThreadPool
+Thread2 finished after 1040ms
+Thread1 finished after 1040ms
+Thread0 finished after 1040ms
+Thread3 finished after 1040ms
+Thread5 finished after 2040ms
+Thread6 finished after 2040ms
+Thread7 finished after 2040ms
+Thread4 finished after 2040ms
+test newCachedThreadPool
+Thread1 finished after 1000ms
+Thread0 finished after 1000ms
+Thread2 finished after 1003ms
+Thread3 finished after 1004ms
+Thread4 finished after 1009ms
+Thread6 finished after 1013ms
+Thread5 finished after 1013ms
+Thread7 finished after 1013ms
+                ```
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 死锁
+
+                ```java
+ExecutorService executor = Executors.newSingleThreadExecutor();
+Future<String> f = executor.submit(() -> {
+  Callable<String> task = () -> {
+    return "111";
+  };
+  return "aaa" + executor.submit(task).get();
+});
+// 死锁
+System.out.println(f.get());
+                ```
+                **重要：尽量不要在线程池中执行阻塞操作**
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 线程池配置
+
+怎样估算线程池最优大小？ —— 《java8实战》 p233
+
+```
+Ncpu = CPU的数量 = `Runtime.getRuntime().availableProcessors();`
+
+Ucpu = 目标CPU的使用率， 0 <= Ucpu <= 1;
+
+W/C = 等待时间与计算时间的比率；
+
+为了保持处理器达到期望的使用率，最优的线程池大小等于：
+
+Nthreads = Ncpu * Ucpu * (1+ W/C);
+```
+
+            </textarea>
+            </section>
+
+        </section>
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ### ForkJoinPool
+
+                一个很好的介绍 [如何使用 ForkJoinPool 以及原理](http://blog.dyngr.com/blog/2016/09/15/java-forkjoinpool-internals/)
+            </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ### ManagedBlocker
+
+```java
+public class ManagedBlockerTest {
+  static class SimpleBlocker implements ForkJoinPool.ManagedBlocker {
+    volatile Integer result = null;
+    public boolean block() throws InterruptedException {
+      Thread.sleep(1000);
+      result = 5;
+      return true;
+    }
+    public boolean isReleasable() {
+      return result != null;
+    }
+    public Integer getItem() { // call after pool.managedBlock completes
+      return result;
+    }
+  }
+
+
+  public static void main(String[] args) throws InterruptedException {
+    ForkJoinPool pool = new ForkJoinPool(4);
+    test(pool, "ForkJoinPool");
+    Thread.sleep(3000);
+    testManagedBlocker(pool, "ManagedBlocker");
+    Thread.sleep(3000);
+  }
+
+  static void test(ExecutorService service, String type) {
+    System.out.println("test " + type);
+    long start = System.currentTimeMillis();
+    for(int i = 0; i < 8; i++) {
+      int j = i;
+      service.submit(() -> {
+        try {
+          Thread.sleep(1000);
+        } catch (InterruptedException e) { }
+        System.out.println("Thread" + j + " finished after " + (System.currentTimeMillis() - start) + "ms");
+      });
+    }
+  }
+
+  static void testManagedBlocker(ForkJoinPool service, String type) {
+    System.out.println("test " + type);
+    long start = System.currentTimeMillis();
+    for(int i = 0; i < 8; i++) {
+      int j = i;
+      service.submit(() -> {
+        SimpleBlocker blocker = new SimpleBlocker();
+        try {
+          service.managedBlock(blocker);
+        } catch (InterruptedException e) { }
+
+        // 注意，这里就不能长时间阻塞线程了
+        while (!blocker.isReleasable()) {
+          try {
+            Thread.sleep(100);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+        }
+        System.out.println("Thread" + j + " finished after " + (System.currentTimeMillis() - start) + "ms");
+      });
+    }
+  }
+}
+```
+            </textarea>
+            </section>
+        </section>
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ## 无锁编程
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### Immutable 不可变对象
+
+```java
+public class Point {
+  public final int x;
+  public final int y;
+
+  public Point(int x, int y) {
+    this.x = x;
+    this.y = y;
+  }
+
+  @Override
+  public int hashCode() {
+    ...
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    ...
+  }
+
+  public Point plus(Point other) {
+    return new Point(this.x + other.x, this.y + other.y);
+  }
+}
+```
+
+```scala
+case class Point(x: Int, y: Int) {
+  def plus(other: Point) = Point(this.x + other.x, this.y + other.y)
+}
+```
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 原子变量与自旋锁
+
+                CAS（compareAndSwap, compareAndSet）
+                * AtomicInteger ...
+
+```java
+def compareAndSet(ov: T, nv: T) : Boolean = this.synchronzied {
+  if(this.get != ov) false else {
+    this.set(nv)
+    true
+  }
+}
+```
+
+> [Java无锁队列与栈的实现](http://www.cqyuanye.com/javadevelopment/java-lock-free-stack-queue/)
+
+> 数据库乐观锁
+            </textarea>
+            </section>
+        </section>
+
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ### 并发集合
+                #### ConcurrentHashMap
+
+                java没有提供ConcurrentHashSet，需要使用`ConcurrentHashMap<T, Boolean>`自己实现一个线程安全的Set。
+                > [Java HashMap死循环分析](http://yangbolin.cn/2014/05/02/hash-map-infinite-loop/)
+
+                TrieMap
+            </textarea>
+            </section>
+        </section>
+
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ### 数据并行集合
+
+                * java8 : parallelStream
+                * scala : par
+
+```java
+double average = roster
+    .parallelStream()
+    .filter(p -> p.getGender() == Person.Sex.MALE)
+    .mapToInt(Person::getAge)
+    .average()
+    .getAsDouble();
+```
+
+```scala
+double average = roster
+    .parallelStream()
+    .filter(p -> p.getGender() == Person.Sex.MALE)
+    .mapToInt(Person::getAge)
+    .average()
+    .getAsDouble();
+```
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 数据并行集合
+
+                不过使用这种集合是有条件的;
+* 对元素的操作需要满足交换律和结合律
+  * a \* b = b \* a
+  * (a \* b) \* c = a \* (b \* c）
+* Parallel Streams 的陷阱
+  * 不能使用[阻塞操作](http://www.tuicool.com/articles/bIrYJvz)
+  * 不要进行有副作用的操作，如修改一个可变变量
+
+            </textarea>
+            </section>
+
+        </section>
+
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                Future
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 调用方法的隐蔽特性
+
+```
+Data result = service.query()
+```
+
+有没有可能在类型中显式反映隐蔽特性呢？
+* null，结果可能为空：Option、Optional
+* Exception，可能抛出运行时异常：Try
+* blocking，可能要运行很长时间：Future
+
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### jdk5 future
+
+[简单](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/Future.html)
+
+```java
+Future<String> future = executor.submit(new Callable<String>() {
+  public String call() {
+    return searcher.search(target);
+  }});
+displayOtherThings(); // do other things while searching
+displayText(future.get()); // use future
+```
+
+缺点：jdk5的Future必须[消耗一个线程](http://www.jianshu.com/p/87bff5cc8d8c)，且无法组合使用。
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+            ### CompletableFuture
+
+            走向了另外一个极端
+
+            * [API 复杂，有五十多个方法](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/CompletableFuture.html)
+            * [使用也不算简单](http://colobu.com/2016/02/29/Java-CompletableFuture/)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+            ### Scala's Future
+
+            [Scala's Future](http://docs.scala-lang.org/overviews/core/futures.html)是一个未来生成的值的占位符，一旦生成这个值，就不能改变
+
+* map 对将来的结果进行映射
+* onComplete、foreach 可以注册（多个）回调函数
+* failed 可以用来处理逻辑异常
+  * 注 这里不会捕获 InterruptedException等严重错误，这些会报给context的reportFailure方法
+
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+```scala
+  import scala.concurrent._
+  import ExecutionContext.Implicits.global
+  import scala.io.Source
+
+  def getUrlSpec(): Future[Seq[String]] = Future {
+    val f = Source.fromURL("http://www.w3.org/Addressing/URL/url-spec.txt")
+    try f.getLines.toList finally f.close()
+  }
+
+  val urlSpec: Future[Seq[String]] = getUrlSpec()
+
+  val pass = urlSpec map { lines =>
+    lines.zipWithIndex.filter(_._1.contains("password")).mkString("\n")
+  } // Future[String]
+
+  pass foreach {
+    lines => log(s"Found occurrences of 'password'\n$lines\n")
+  }
+  pass.failed foreach {
+    ex => log(s"catch exception $ex\n")
+  }
+```
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+```scala
+  val netiquette = Future { Source.fromURL("http://www.ietf.org/rfc/rfc1855.txt").mkString }
+  val urlSpec = Future { Source.fromURL("http://www.w3.org/Addressing/URL/url-spec.txt").mkString }
+  val answer = for {
+    nettext <- netiquette
+    urltext <- urlSpec
+  } {
+    println("First of all, read this: " + nettext + " Once you're done, try this: " + urltext)
+  }
+```
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### 明日歌
+
+```
+明日歌 —— 文嘉／錢鶴灘
+
+明日复明日，
+明日何其多。
+我生待明日，
+万事成蹉跎。
+
+Future Song - Wen Jia / Qian Hetan
+
+The Future flatMaps a Future.
+The Future tailcalls forever.
+My life to await the Future.
+It comes OutOfMemoryError.
+
+* https://github.com/qifun/stateless-future
+```
+
+                适用场景：IO操作等需要等待的情况，而不适合用于cpu密集的任务
+            </textarea>
+            </section>
+
+        </section>
+
+
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                ## Akka
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from https://www.slideshare.net/jboner/akka-simpler-scalability-faulttolerance-concurrency-remoting-through-actors](img/shared_state_concurrency1.png)
+
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from https://www.slideshare.net/jboner/akka-simpler-scalability-faulttolerance-concurrency-remoting-through-actors](img/shared_state_concurrency3.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from https://www.slideshare.net/jboner/akka-simpler-scalability-faulttolerance-concurrency-remoting-through-actors](img/shared_state_concurrency4.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from https://www.slideshare.net/jboner/akka-simpler-scalability-faulttolerance-concurrency-remoting-through-actors](img/shared_state_concurrency5.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from https://www.slideshare.net/jboner/akka-simpler-scalability-faulttolerance-concurrency-remoting-through-actors](img/shared_state_concurrency6.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from https://www.slideshare.net/jboner/akka-simpler-scalability-faulttolerance-concurrency-remoting-through-actors](img/shared_state_concurrency7.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from https://www.slideshare.net/jboner/akka-simpler-scalability-faulttolerance-concurrency-remoting-through-actors](img/shared_state_concurrency8.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+
+* 对并发/并行程序的简单的、高级别的抽象。
+* 异步、非阻塞、高性能的事件驱动编程模型。
+* 非常轻量的事件驱动处理（1G内存可容纳约270万个actors）。
+* 使用“let-it-crash”语义和监管者树形结构来实现容错。
+* 天生分布式：Akka的所有元素都为分布式环境而设计：所有actor都仅通过发送消息进行互操作，所有操作都是异步的。
+
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+
+```java
+class Counter {
+    private int c = 0;
+
+    public void increment() {
+        c++;
+    }
+
+    public void decrement() {
+        c--;
+    }
+
+    public int value() {
+        return c;
+    }
+}
+```
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+
+```scala
+case object Increase
+case object Decrease
+case object GetValue
+
+class Counter extends Actor {
+  var c = 0
+
+  def receive = {
+    case Increase => c = c + 1
+    case Decrease => c = c - 1
+    case GetValue => sender ! c
+  }
+}
+```
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+
+```java
+import java.util.concurrent.BlockingQueue;
+
+public class Producer implements Runnable {
+  private BlockingQueue<String> queue;
+
+  public Producer(BlockingQueue<String> q) {
+    this.queue = q;
+  }
+
+  @Override
+  public void run() {
+    try {
+      for (int i = 0; i < 10; i++) {
+        Thread.sleep(i * 200);
+        queue.put("" + i);
+        System.out.println("Produced " + i);
+      }
+      queue.put("exit");
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+}
+
+import java.util.concurrent.BlockingQueue;
+
+public class Consumer implements Runnable {
+
+  private BlockingQueue<String> queue;
+
+  public Consumer(BlockingQueue<String> q) {
+    this.queue = q;
+  }
+
+  @Override
+  public void run() {
+    try {
+      String msg;
+      //consuming messages until exit message is received
+      while (!(msg = queue.take()).equals("exit")) {
+        Thread.sleep(1000);
+        System.out.println("Consumed " + msg);
+      }
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
+  }
+}
+
+public class ProducerConsumerService {
+
+  public static void main(String[] args) {
+    BlockingQueue<String> queue = new ArrayBlockingQueue<>(2);
+    Producer producer = new Producer(queue);
+    Consumer consumer = new Consumer(queue);
+    //starting producer to produce messages in queue
+    new Thread(producer).start();
+    //starting consumer to consume messages from queue
+    new Thread(consumer).start();
+    System.out.println("Producer and Consumer has been started");
+  }
+}
+```
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+```scala
+import akka.actor.{ ActorSystem, Props, Actor }
+
+case object Start
+case object Produce
+case object Consumed
+case object Done
+
+class ProducerActor extends Actor {
+  // state
+  var i = 0
+
+  def receive = {
+    case Produce =>
+      context.actorOf(Props(classOf[ConsumerActor], i), "consumer" + i)
+      println("Produced " + i)
+      i = i + 1
+      if(i >= 10) {
+        self ! Done
+      }
+    case Done => context.stop(self)
+  }
+}
+
+class ConsumerActor(i : Int) extends Actor {
+  import context.dispatcher
+  import scala.concurrent.duration._
+  context.system.scheduler.scheduleOnce(1 second, self, Consumed)
+
+  override def receive: Receive = {
+    case Consumed =>
+      println("Consumed " + i)
+      context.parent ! Produce
+      context.stop(self)
+  }
+}
+
+class Master extends Actor {
+  val producer = context.actorOf(Props[ProducerActor], "producer")
+
+  def receive = {
+    case Start =>
+      producer ! Produce
+  }
+}
+
+object ProducerConsumerExampleInAkka extends App {
+  val system = ActorSystem("ProducerConsumerExampleInAkka")
+  val master = system.actorOf(Props[Master], "master")
+  master ! Start
+}
+```
+            </textarea>
+            </section>
+        </section>
+
+        <section>
+        <section data-markdown>
+            <textarea data-template>
+                ## Reactive Stream
+            </textarea>
+        </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream1.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream2.png)
+            </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream3.png)
+           </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream4.png)
+
+                ![from Real World Akka Stream](img/stream5.png)
+           </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream6.png)
+
+                ![from Real World Akka Stream](img/stream7.png)
+           </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream8.png)
+           </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream9.png)
+           </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream10.png)
+
+```
+  implicit val system = ActorSystem("QuickStart")
+  implicit val materializer = ActorMaterializer()
+  implicit val dispatcher = system.dispatcher
+  import scala.concurrent.duration._
+
+  val source = Source(1 until 10)
+  val flow = Flow[Int].throttle(1, 1 second, 1, ThrottleMode.Shaping)
+  val sink = Sink.foreach[Int](a => println("Consumed " + a))
+
+  // connect the Source to the Sink, obtaining a RunnableGraph
+  val runnable = source.via(flow).to(sink)
+  runnable.run()
+```
+           </textarea>
+            </section>
+            <section data-markdown>
+            <textarea data-template>
+                ![from Real World Akka Stream](img/stream11.png)
+           </textarea>
+            </section>
+
+        </section>
+
+
+        <section style="text-align: left;">
+            <h1>THE END</h1>
+            <h1>Thanks</h1>
+        </section>
+
+    </div>
+
+</div>
+
+<script src="lib/js/head.min.js"></script>
+<script src="js/reveal.js"></script>
+
+<script>
+
+			// More info https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// More info https://github.com/hakimel/reveal.js#dependencies
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+</body>
+</html>
