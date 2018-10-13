@@ -47,7 +47,13 @@
             </p>
         </section>
 
+        <section>
         <section data-markdown>
+            <textarea data-template>
+                ![concurrency-scala-book](img/concurrency-scala-book.jpg)
+            </textarea>
+        </section>
+            <section data-markdown>
             <textarea data-template>
                 ### 提纲
 
@@ -55,6 +61,7 @@
                 * 基础回顾
                 * 新的模式
             </textarea>
+        </section>
         </section>
 
         <section>
@@ -112,12 +119,6 @@ double(7)
 14
 </pre></code>
             </section>
-
-            <section>
-            <h3>一段代码的执行</h3>
-            <img src="img/coroutines/function-invocation-4.svg" alt="from http://aleksandar-prokopec.com/slides/coroutines.html" />
-            </section>
-
 
             <section data-markdown>
             <textarea data-template>
@@ -350,7 +351,7 @@ Nthreads = Ncpu * Ucpu * (1+ W/C);
                 ### ForkJoinPool
                 将任务拆分到足够小，然后通过`work-stealing`实现负载均衡
                 * [线程池与ForkJoin比较](https://www.jdon.com/performance/threadpool-forkjoin.html)
-                * [如何使用 ForkJoinPool 以及原理](http://blog.dyngr.com/blog/2016/09/15/java-forkjoinpool-internals/)
+                * [如何使用ForkJoinPool以及原理](http://blog.dyngr.com/blog/2016/09/15/java-forkjoinpool-internals/)
                 
             </textarea>
             </section>
@@ -550,7 +551,19 @@ def compareAndSet(ov: T, nv: T) : Boolean = this.synchronzied {
         <section>
             <section data-markdown>
             <textarea data-template>
-                Future
+                #### Asynchronous Programming
+
+                * [Asynchronous Programming and Scala](https://alexn.org/blog/2017/01/30/asynchronous-programming-scala.html)
+
+                `type Async[A] = (A => Unit) => Unit`
+            </textarea>
+            </section>
+        </section>
+
+        <section>
+            <section data-markdown>
+            <textarea data-template>
+                #### Future
             </textarea>
             </section>
 
@@ -609,16 +622,36 @@ displayText(future.get()); // use future
 
             [Scala's Future](http://docs.scala-lang.org/overviews/core/futures.html)是一个未来生成的值的占位符，一旦生成这个值，就不能改变
 
-* map 对将来的结果进行映射
-* onComplete、foreach 可以注册（多个）回调函数
-* failed 可以用来处理逻辑异常
-  * 注 这里不会捕获 InterruptedException等严重错误，这些会报给context的reportFailure方法
+            `type Async[A] = (A => Unit) => Unit`
+
+            ![](./img/async_type.png)
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+            ### Scala's Future
+
+            ![](./img/future_interface.png)
 
             </textarea>
             </section>
 
             <section data-markdown>
             <textarea data-template>
+            ### Scala's Future
+
+* map flatMap 对将来的结果进行映射
+* onComplete、foreach 可以注册（多个）回调函数
+* failed 可以用来处理逻辑异常
+  * 注: 这里不会捕获 InterruptedException等严重错误，这些会报给context的reportFailure方法
+
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+
 ```scala
   import scala.concurrent._
   import ExecutionContext.Implicits.global
@@ -661,6 +694,63 @@ displayText(future.get()); // use future
             </textarea>
             </section>
 
+            <section data-markdown>
+            <textarea data-template>
+                ### blocking in future
+
+```scala
+  val futures = for(_ <- 0 until 16) yield Future {
+    blocking {
+      Thread.sleep(1000)
+    }
+  }
+```
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### Promise
+                ![](./img/promise_interface.png)
+
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
+                ### Promise
+                ![](./img/promise_race.png)
+
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### Promise
+
+```scala
+  import org.apache.commons.io.monitor._
+  def fileCreated(directory: String): Future[String] = {
+    val p = Promise[String]
+
+    val fileMonitor = new FileAlterationMonitor(1000)
+    val observer = new FileAlterationObserver(directory)
+    val listener = new FileAlterationListenerAdaptor {
+      override def onFileCreate(file: File) {
+        try p.trySuccess(file.getName)
+        finally fileMonitor.stop()
+      }
+    }
+    observer.addListener(listener)
+    fileMonitor.addObserver(observer)
+    fileMonitor.start()
+
+    p.future
+  }
+```
+            </textarea>
+            </section>
 
             <section data-markdown>
             <textarea data-template>
@@ -677,7 +767,7 @@ displayText(future.get()); // use future
 Future Song - Wen Jia / Qian Hetan
 
 The Future flatMaps a Future.
-The Future tailcalls forever.
+The Future tail-calls forever.
 My life to await the Future.
 It comes OutOfMemoryError.
 
@@ -687,6 +777,16 @@ It comes OutOfMemoryError.
                 适用场景：IO操作等需要等待的情况，而不适合用于cpu密集的任务
             </textarea>
             </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ### alternatives
+                * [scala-async](https://github.com/scala/scala-async)
+                * [monix](https://monix.io/)
+            </textarea>
+            </section>
+
         </section>
 
 
@@ -694,7 +794,29 @@ It comes OutOfMemoryError.
         <section>
             <section data-markdown>
             <textarea data-template>
+                ## Actor model
+
+                [Actor in 小红书](https://github.com/fpinscala/fpinscala/blob/master/exercises/src/main/scala/fpinscala/parallelism/Actor.scala)
+
+                Dispather 就是 Akka 的ExecutorService
+            </textarea>
+            </section>
+
+            <section data-markdown>
+            <textarea data-template>
                 ## Akka
+
+                ![](./img/actor_basic.png)
+            </textarea>
+            </section>
+
+
+            <section data-markdown>
+            <textarea data-template>
+                ## blocking in Akka
+
+                * [blocking in future](https://stackoverflow.com/questions/19944034/blocking-calls-in-akka-actors)
+                * [Handling blocking operations in Akka HTTP](https://doc.akka.io/docs/akka-http/current/handling-blocking-operations-in-akka-http-routes.html)
             </textarea>
             </section>
 
@@ -895,6 +1017,8 @@ object ProducerConsumerExampleInAkka extends App {
 
             <section data-markdown>
             <textarea data-template>
+                [Real World Akka Stream，罗辑 @ 知乎](https://github.com/scalacn/scala-meetup/tree/master/Beijing/2017-04-22)
+
                 ![from Real World Akka Stream](img/stream1.png)
             </textarea>
             </section>

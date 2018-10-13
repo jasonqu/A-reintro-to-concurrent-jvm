@@ -3,9 +3,9 @@ lazy val concurrent_jvm = (project in file("."))
     name := "concurrent-jvm",
     organization := "org.bitbucket.qiuguo0205",
     version := "0.0.1-SNAPSHOT",
-    scalaVersion := "2.12.2",
+    scalaVersion := "2.12.6",
     libraryDependencies ++= {
-      val akkaVersion = "2.5.3"
+      val akkaVersion = "2.5.14"
       Seq(
         // akka
         "com.typesafe.akka" %% "akka-actor" % akkaVersion withSources(),
